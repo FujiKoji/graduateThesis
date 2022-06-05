@@ -6,15 +6,14 @@ from numba import jit
 import time
 import japanize_matplotlib
 import matplotlib.ticker as ptick
-#from mpl_toolkits.mplot3d import Axes3D
 
 @jit(nopython=True)
 def gausian(t,σ,b):
-    result = 2*(1/((2*3.14)**0.5)*σ)*math.exp(-((t-b)**2)/(2*σ**2))/1.9950963996680075e-11
+    result = 2*(1/((2*3.14)**0.5)*σ)*math.exp(-((t-b)**2)/(2*σ**2))/1.9950064981822565e-11
     return result
 
 @jit(nopython=True)
-def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,Jx_2,Jy_0,Jy_1,Jy_2,Jz_0,Jz_1,Jz_2,Xe,ρ,Nt,Nx,Ny,Nz,c,Δt,μ,ε,Δx,Δy,Δz,d1,d2,bx1,bx2,by1,by2,bz1,bz2,σ,b):
+def cal(Jx,Jz,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,Jx_2,Jy_0,Jy_1,Jy_2,Jz_0,Jz_1,Jz_2,Xe,ρ,Nt,Nx,Ny,Nz,c,Δt,μ,ε,Δx,Δy,Δz,d1,d2,bx1,bx2,by1,by2,bz1,bz2,σ,b,doutai_x,doutai_y,doutai_z):
     for m in range(Nt-1):
         print(m)
         for k in range(Nx):
@@ -81,7 +80,9 @@ def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,
                                         -(bz1*(1-d1)+bz2*(1-d2))*(Jx_1[k,l,-3]-Jx_0[k,l,-2])\
                                         +((1-d1)+(1-d2))*Jx_1[k,l,-2]\
                                         -(1-d1)*(1-d2)*Jx_0[k,l,-3]
-                    elif (20<k<=80 and 49<=l<=51 and n==48) or (20<k<=80 and l==50 and n==51):#導体
+                                        
+                    elif (30<k<280 and 20<=l<=40 and n==24) or (51<k<250 and l==30 and n==30) or (50<k<250 and l==26 and 29<=n<=31) or (50<k<250 and l==27 and 28<=n<=32) or (50<k<250 and l==28 and 27<=n<=29) or (50<k<250 and l==28 and 31<=n<=33) or (50<k<250 and l==29 and 26<=n<=28) or (50<k<250 and l==29 and 32<=n<=34) or (50<k<250 and l==30 and 26<=n<=27) or (50<k<250 and l==30 and 33<=n<=34) or (50<k<250 and l==31 and 26<=n<=28) or (50<k<250 and l==31 and 32<=n<=34) or (50<k<250 and l==32 and 27<=n<=29) or (50<k<250 and l==32 and 31<=n<=33) or (50<k<250 and l==33 and 28<=n<=32) or (50<k<250 and l==34 and 29<=n<=31):#導体
+                        doutai_x[k,l,n]=1
                         Xe_ave = (Xe[k,l,n]+Xe[k-1,l,n])/2
                         Cx = (Δt**2)*(
                                         (Ax_1[k+1,l,n]-2*Ax_1[k,l,n]+Ax_1[k-1,l,n])/(Δx**2)
@@ -98,6 +99,20 @@ def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,
                                         *(ρ*Δt*Cx/2+(Δt**2)*Dx/(3*ε*(1+Xe_ave)))
                         Jx_2[k,l,n] = 1/(ρ*Δt/2+(Δt**2)/(3*ε*(1+Xe_ave)))\
                                         *(-Cx+Dx)
+                    elif k==51 and l==30 and n==30:
+                        doutai_x[k,l,n]=10
+                        Xe_ave = (Xe[k,l,n]+Xe[k-1,l,n])/2
+                        Jx_0[51,30,30] = gausian(Δt*(m-1),σ,b)
+                        Jx_1[51,30,30] = gausian(Δt*m,σ,b)
+                        Jx_2[51,30,30] = gausian(Δt*(m+1),σ,b)
+                        Ax_2[k,l,n] = (Δt**2)*(
+                                        (Ax_1[k+1,l,n]-2*Ax_1[k,l,n]+Ax_1[k-1,l,n])/(Δx**2)
+                                        +(Ax_1[k,l+1,n]-2*Ax_1[k,l,n]+Ax_1[k,l-1,n])/(Δy**2)
+                                        +(Ax_1[k,l,n+1]-2*Ax_1[k,l,n]+Ax_1[k,l,n-1])/(Δz**2)
+                                        -ε*μ*Xe_ave*(U_1[k,l,n]-U_0[k,l,n]-U_1[k-1,l,n]+U_0[k-1,l,n])/(Δx*Δt)
+                                        +μ*(Jx_2[k,l,n]+Jx_1[k,l,n]+Jx_0[k,l,n])/3
+                                        )/(ε*μ*(1+Xe_ave)) \
+                                +2*Ax_1[k,l,n]-Ax_0[k,l,n]
                     else:
                         Xe_ave = (Xe[k,l,n]+Xe[k-1,l,n])/2 
 
@@ -172,7 +187,9 @@ def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,
                                         -(bz1*(1-d1)+bz2*(1-d2))*(Jy_1[k,l,-3]-Jy_0[k,l,-2])\
                                         +((1-d1)+(1-d2))*Jy_1[k,l,-2]\
                                         -(1-d1)*(1-d2)*Jy_0[k,l,-3]
-                    elif k==20 and 50<=l<=51 and n==48:#導体
+                                        
+                    elif (30<=k<280 and 21<=l<=40 and n==24) or (50<=k<250 and 30<=l<=31 and n==26) or(50<=k<250 and 29<=l<=32 and n==27) or (50<=k<250 and 28<=l<=29 and n==28) or (50<=k<250 and 32<=l<=33 and n==28) or (50<=k<250 and 27<=l<=28 and n==29) or (50<=k<250 and 33<=l<=34 and n==29) or (50<=k<250 and l==27 and n==30) or (50<=k<250 and l==34 and n==30) or (50<=k<250 and 27<=l<=28 and n==31) or (50<=k<250 and 33<=l<=34 and n==31) or (50<=k<250 and 28<=l<=29 and n==32) or (50<=k<250 and 32<=l<=33 and n==32) or (50<=k<250 and 29<=l<=32 and n==33) or (50<=k<250 and 30<=l<=31 and n==34):#導体
+                        doutai_y[k,l,n]=1
                         Xe_ave = (Xe[k,l,n]+Xe[k,l-1,n])/2
                         Cy = (Δt**2)*(
                                         (Ay_1[k+1,l,n]-2*Ay_1[k,l,n]+Ay_1[k-1,l,n])/(Δx**2)
@@ -188,7 +205,7 @@ def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,
                         Ay_2[k,l,n] = 1/(ρ*Δt/2+(Δt**2)/(3*ε*(1+Xe_ave)))\
                                         *(ρ*Δt*Cy/2+(Δt**2)*Dy/(3*ε*(1+Xe_ave)))
                         Jy_2[k,l,n] = 1/(ρ*Δt/2+(Δt**2)/(3*ε*(1+Xe_ave)))\
-                                        *(-Cy+Dy)
+                                        *(-Cy+Dy)                
                     else:
                         Xe_ave = (Xe[k,l,n]+Xe[k,l-1,n])/2
                         Ay_2[k,l,n] = (Δt**2)*(
@@ -262,36 +279,25 @@ def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,
                                         -(bz1*(1-d1)+bz2*(1-d2))*(Jz_1[k,l,-3]-Jz_0[k,l,-2])\
                                         +((1-d1)+(1-d2))*Jz_1[k,l,-2]\
                                         -(1-d1)*(1-d2)*Jz_0[k,l,-3]
-                    elif k==20 and l==50 and 48<n<=51:#導体
-                        if k==20 and l==50 and n==50:
-                            Jz_0[20,50,50] = gausian(Δt*(m-1),σ,b)
-                            Jz_1[20,50,50] = gausian(Δt*m,σ,b)
-                            Jz_2[20,50,50] = gausian(Δt*(m+1),σ,b)                     
-                            Az_2[k,l,n] = (Δt**2)*(
-                                            (Az_1[k+1,l,n]-2*Az_1[k,l,n]+Az_1[k-1,l,n])/(Δx**2)
-                                            +(Az_1[k,l+1,n]-2*Az_1[k,l,n]+Az_1[k,l-1,n])/(Δy**2)
-                                            +(Az_1[k,l,n+1]-2*Az_1[k,l,n]+Az_1[k,l,n-1])/(Δz**2)
-                                            -ε*μ*Xe_ave*(U_1[k,l,n]-U_0[k,l,n]-U_1[k,l,n-1]+U_0[k,l,n-1])/(Δz*Δt)
-                                            +μ*(Jz_2[k,l,n]+Jz_1[k,l,n]+Jz_0[k,l,n])/3
-                                            )/(ε*μ*(1+Xe_ave)) \
-                                    +2*Az_1[k,l,n]-Az_0[k,l,n]
-                        else:
-                            Xe_ave = (Xe[k,l,n]+Xe[k,l,n-1])/2
-                            Cz = (Δt**2)*(
-                                            (Az_1[k+1,l,n]-2*Az_1[k,l,n]+Az_1[k-1,l,n])/(Δx**2)
-                                            +(Az_1[k,l+1,n]-2*Az_1[k,l,n]+Az_1[k,l-1,n])/(Δy**2)
-                                            +(Az_1[k,l,n+1]-2*Az_1[k,l,n]+Az_1[k,l,n-1])/(Δz**2)
-                                            -ε*μ*Xe_ave*(U_1[k,l,n]-U_0[k,l,n]-U_1[k,l,n-1]+U_0[k,l,n-1])/(Δx*Δt)
-                                            +μ*(Jz_1[k,l,n]+Jz_0[k,l,n])/3
-                                            )/(ε*μ*(1+Xe_ave)) \
-                                    +2*Az_1[k,l,n]-Az_0[k,l,n]
-                            Dz = -(Δt/Δy)*(U_1[k,l,n]-U_1[k,l,n-1])\
-                                +Az_1[k,l,n]\
-                                -ρ*Δt*Jz_1[k,l,n]/2
-                            Az_2[k,l,n] = 1/(ρ*Δt/2+(Δt**2)/(3*ε*(1+Xe_ave)))\
-                                            *(ρ*Δt*Cz/2+(Δt**2)*Dz/(3*ε*(1+Xe_ave)))
-                            Jz_2[k,l,n] = 1/(ρ*Δt/2+(Δt**2)/(3*ε*(1+Xe_ave)))\
-                                            *(-Cz+Dz)
+                    
+                    elif (50<=k<250 and l==26 and 30<=n<=31) or (50<=k<250 and l==27 and 29<=n<=32) or (50<=k<250 and l==28 and 28<=n<=29) or (50<=k<250 and l==28 and 32<=n<=33) or (50<=k<250 and l==29 and 27<=n<=28) or (50<=k<250 and l==29 and 33<=n<=34) or (50<=k<250 and l==30 and n==27) or (50<=k<250 and l==30 and n==34) or (50<=k<250 and l==31 and 27<=n<=28) or (50<=k<250 and l==31 and 33<=n<=34) or (50<=k<250 and l==32 and 28<=n<=29) or (50<=k<250 and l==32 and 32<=n<=33) or (50<=k<250 and l==33 and 29<=n<=32) or (50<=k<250 and l==34 and 30<=n<=31):
+                        doutai_z[k,l,n]=1
+                        Xe_ave = (Xe[k,l,n]+Xe[k,l,n-1])/2
+                        Cz = (Δt**2)*(
+                                        (Az_1[k+1,l,n]-2*Az_1[k,l,n]+Az_1[k-1,l,n])/(Δx**2)
+                                        +(Az_1[k,l+1,n]-2*Az_1[k,l,n]+Az_1[k,l-1,n])/(Δy**2)
+                                        +(Az_1[k,l,n+1]-2*Az_1[k,l,n]+Az_1[k,l,n-1])/(Δz**2)
+                                        -ε*μ*Xe_ave*(U_1[k,l,n]-U_0[k,l,n]-U_1[k,l,n-1]+U_0[k,l,n-1])/(Δx*Δt)
+                                        +μ*(Jz_1[k,l,n]+Jz_0[k,l,n])/3
+                                        )/(ε*μ*(1+Xe_ave)) \
+                                +2*Az_1[k,l,n]-Az_0[k,l,n]
+                        Dz = -(Δt/Δy)*(U_1[k,l,n]-U_1[k,l,n-1])\
+                            +Az_1[k,l,n]\
+                            -ρ*Δt*Jz_1[k,l,n]/2
+                        Az_2[k,l,n] = 1/(ρ*Δt/2+(Δt**2)/(3*ε*(1+Xe_ave)))\
+                                        *(ρ*Δt*Cz/2+(Δt**2)*Dz/(3*ε*(1+Xe_ave)))
+                        Jz_2[k,l,n] = 1/(ρ*Δt/2+(Δt**2)/(3*ε*(1+Xe_ave)))\
+                                        *(-Cz+Dz)
                     else:
                         Xe_ave = (Xe[k,l,n]+Xe[k,l,n-1])/2
                         Az_2[k,l,n] = (Δt**2)*(
@@ -342,6 +348,7 @@ def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,
                                                     +(Az_2[k,l,n+1]-Az_2[k,l,n])/Δz)\
                                                 +U_1[k,l,n]
         Jx[m+1,:,:,:] = Jx_2
+        Jz[m+1,:,:,:] = Jz_2
         U[m+1,:,:,:] = U_2
         Ax_0 = np.copy(Ax_1)
         Ax_1 = np.copy(Ax_2)
@@ -355,51 +362,29 @@ def cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,
         Jy_1 = np.copy(Jy_2)
         Jz_0 = np.copy(Jz_1)
         Jz_1 = np.copy(Jz_2)
+
         U_0 = np.copy(U_1)
         U_1 = np.copy(U_2)
-    return Jx,U
-
-start = time.time()
-Jx_result,U_result = cal(Jx,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,Jx_2,Jy_0,Jy_1,Jy_2,Jz_0,Jz_1,Jz_2,Xe,ρ,Nt,Nx,Ny,Nz,c,Δt,μ,ε,Δx,Δy,Δz,d1,d2,bx1,bx2,by1,by2,bz1,bz2,σ,b)
-processtime = time.time()-start
-
-print(processtime)
+    return Jx,Jz,U
 
 #NMとCMの導出
-V_n = np.zeros([Nt,Nx-1])
-V_s = np.zeros([Nt,Nx-1])
-I_n = np.zeros([Nt,Nx])
-I_s = np.zeros([Nt,Nx])
-I_1 = np.zeros([Nt,Nx])
-I_2 = np.zeros([Nt,Nx])
-
-
-def common(V_n,V_s,I_n,I_s,I_1,I_2,U,Jx,Nt,Nx):
+@jit(nopython=True)
+def origin(Nt,Nx,Ny,Nz,Jx_result,I_1,I_2,I_3,I_n,I_s,I_c,I_2_in,I_2_out):
     for m in range(Nt):
-        for k in range(Nx-1):
-            V_n[m,k] = U[m,k,50,51]-U[m,k,50,48]
-            V_s[m,k] = 0.5*(U[m,k,50,51]+U[m,k,50,48])
         for k in range(Nx):
-            I_1[m,k] = (Jx[m,k,50,51])*0.001*0.001
-            I_2[m,k] = (Jx[m,k,50,48]+Jx[m,k,49,48]+Jx[m,k,51,48])*0.001*0.001
-            I_n[m,k] = 0.5*(I_1[m,k]-I_2[m,k])
-            I_s[m,k] = I_1[m,k]+I_2[m,k]
-    return V_n,V_s,I_n,I_s
-
-V_n_0,V_s_0,I_n_0,I_s_0 = common(V_n,V_s,I_n,I_s,I_1,I_2,U,Jx,Nt,Nx)
-
-#電力の導出
-def power(P_s_0,P_n_0):
-  for i in range(Nt):
-    for k in range(Nx-1):
-        P_n_0[i,k]=V_n_0[i,k]*((I_n_0[i,k]+I_n_0[i,k+1])/2)
-        P_s_0[i,k]=V_s_0[i,k]*((I_s_0[i,k]+I_s_0[i,k+1])/2)
-  return P_s_0, P_n_0
-
-#電力の最大値のプロット
-def max_power(end_n,end_s,P_n_max_0,P_s_max_0):
-  for i in range(Nx-1):
-      P_n_max_0[i]=P_n_0[0:end_n,i].max()
-  for i in range(Nx-1):
-      P_s_max_0[i]=P_s_0[0:end_s,i].max()
-  return P_n_max_0, P_s_max_0
+            for l in range(Ny-1):
+                for n in range(Nz-1):
+                    if (50<k<250 and l==26 and 29<=n<=31) or (50<k<250 and l==27 and 28<=n<=32) or (50<k<250 and l==28 and 27<=n<=29) or (50<k<250 and l==28 and 31<=n<=33) or (50<k<250 and l==29 and 26<=n<=28) or (50<k<250 and l==29 and 32<=n<=34) or (50<k<250 and l==30 and 26<=n<=27) or (50<k<250 and l==30 and 33<=n<=34) or (50<k<250 and l==31 and 26<=n<=28) or (50<k<250 and l==31 and 32<=n<=34) or (50<k<250 and l==32 and 27<=n<=29) or (50<k<250 and l==32 and 31<=n<=33) or (50<k<250 and l==33 and 28<=n<=32) or (50<k<250 and l==34 and 29<=n<=31):#導体
+                        I_2[m,k] += Jx_result[m,k,l,n]*0.001*0.001
+                        if (50<k<250 and l==26 and 29<=n<=31) or (50<k<250 and l==27 and n==28) or (50<k<250 and l==27 and n==32) or (50<k<250 and l==28 and n==26) or (50<k<250 and l==28 and n==33) or (50<k<250 and 29<=l<=31 and n==26) or (50<k<250 and 29<=l<=31 and n==34) or (50<k<250 and l==32 and n==27) or (50<k<250 and l==32 and n==33) or (50<k<250 and l==33 and 28<=n<=32) or (50<k<250 and l==34 and 29<=n<=31):
+                            I_2_out[m,k] += Jx_result[m,k,l,n]*0.001*0.001
+                        elif (50<k<250 and l==27 and n==30) or (50<k<250 and l==28 and n==29) or (50<k<250 and l==28 and n==31) or (50<k<250 and l==29 and n==28) or (50<k<250 and l==29 and n==32) or (50<k<250 and l==30 and n==27) or (50<k<250 and l==30 and n==33) or (50<k<250 and l==31 and n==28) or (50<k<250 and l==31 and n==32) or (50<k<250 and l==32 and n==29) or (50<k<250 and l==32 and n==31) or (50<k<250 and l==33 and n==30):
+                            I_2_in[m,k] += Jx_result[m,k,l,n]*0.001*0.001
+                    elif 50<k<250 and l==30 and n==30:
+                        I_1[m,k]=Jx_result[m,k,l,n]*0.001*0.001
+                    elif (50<k<250 and 20<=l<=40 and n==24):
+                        I_3[m,k]+=Jx_result[m,k,l,n]*0.001*0.001
+    I_n = (I_1-I_2)*0.5
+    I_s = I_1+I_2
+    I_c = (I_1+I_2-I_3)*0.5
+    return I_1,I_2,I_3,I_n,I_s,I_c
