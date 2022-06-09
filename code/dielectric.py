@@ -6,7 +6,7 @@ from numba import jit
 import time
 import japanize_matplotlib
 import matplotlib.ticker as ptick
-import coaxial_module
+import dielectric_func
 
 # 定数の定義
 ε = 8.854187817e-12  #真空の誘電率
@@ -106,26 +106,11 @@ for k in range(Nx-1):
                 Xe[k,l,n] = out
 
 start = time.time()
-Jx_result,Jz_result,U_result = coaxial_module.cal(Jx,Jz,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,Jx_2,Jy_0,Jy_1,Jy_2,Jz_0,Jz_1,Jz_2,Xe,ρ,Nt,Nx,Ny,Nz,c,Δt,μ,ε,Δx,Δy,Δz,d1,d2,bx1,bx2,by1,by2,bz1,bz2,σ,b,doutai_x,doutai_y,doutai_z)
+Jx_result,Jz_result,U_result = dielectric_func.cal(Jx,Jz,U,Ax_0,Ax_1,Ax_2,Ay_0,Ay_1,Ay_2,Az_0,Az_1,Az_2,U_0,U_1,U_2,Jx_0,Jx_1,Jx_2,Jy_0,Jy_1,Jy_2,Jz_0,Jz_1,Jz_2,Xe,ρ,Nt,Nx,Ny,Nz,c,Δt,μ,ε,Δx,Δy,Δz,d1,d2,bx1,bx2,by1,by2,bz1,bz2,σ,b,doutai_x,doutai_y,doutai_z)
 processtime = time.time()-start
 print(processtime)
 
-I_1_result,I_2_result,I_3_result,I_n_result,I_s_result,I_c_result = coaxial_module.origin(Nt,Nx,Ny,Nz,Jx_result,I_1,I_2,I_3,I_n,I_s,I_c,I_2_in,I_2_out)
-
-# fig, ax = plt.subplots()
-# ax.yaxis.set_major_formatter(ptick.ScalarFormatter(useMathText=True)) 
-# ax.yaxis.offsetText.set_fontsize(18)
-# ax.ticklabel_format(style='sci',axis='y',scilimits=(0,0))
-# plt.xlabel("距離(mm)",fontsize=30)
-# plt.ylabel("電流(A)",fontsize=30)
-# plt.ylim(-6e-8,6e-8)
-# ax.plot(I_2_out[280,:],color = "red",label="外導体の外側")
-# ax.plot(I_3_result[280,:],color="orange",label="基準導体")
-# plt.gca().yaxis.set_tick_params(direction='in')
-# plt.gca().xaxis.set_tick_params(direction='in')
-# ax.legend(fontsize=24)
-# ax.tick_params(labelsize=18)
-# plt.show()
+I_1_result,I_2_result,I_3_result,I_n_result,I_s_result,I_c_result = dielectric_func.origin(Nt,Nx,Ny,Nz,Jx_result,I_1,I_2,I_3,I_n,I_s,I_c,I_2_in,I_2_out)
 
 fig, ax = plt.subplots(figsize=(12,7.3))
 def anime(i):
@@ -135,8 +120,6 @@ def anime(i):
     ax.ticklabel_format(style='sci',axis='y',scilimits=(0,0))
     plt.xlabel("距離(mm)",fontsize=30)
     plt.ylabel("電流(A)",fontsize=30)
-    # plt.plot(Jx_result[2*i,:,30,34],color = "red")
-    # plt.plot(Jx_result[2*i,:,32,33],color = "red")
     plt.ylim(-6e-8,6e-8)
     plt.plot(I_2_out[2*i,50:251],color = "orange")
     plt.plot(I_3_result[2*i,50:251],color = "red")
@@ -144,24 +127,5 @@ def anime(i):
     plt.gca().xaxis.set_tick_params(direction='in')
     ax.tick_params(labelsize=18)
     plt.rcParams["font.size"] = 25
-    # plt.tight_layout()
-    # ax.legend(fontsize=24)
 anim = animation.FuncAnimation(fig,anime,frames=249,interval=100)
 anim.save("out.gif",writer="imagemagick")
-
-# fig=plt.figure()
-# vmax = Jz_result.max()
-# vmin = -Jz_result.max()
-
-# def anime(i):
-#     print(i)
-#     plt.clf()
-#     t = 2*i
-#     # plt.imshow(Jx_result[t,40,:,:],vmax=vmax,vmin=vmin)
-#     plt.imshow(Jx_result[t,:,30,:].T,vmax=vmax,vmin=vmin,cmap="bwr")
-#     # plt.tightlayout()
-# anim = animation.FuncAnimation(fig,anime,frames=149,interval=100)
-# plt.show()
-
-# plt.imshow(doutai_y[51,:,:])
-# plt.show()
